@@ -37,6 +37,7 @@ import { Header } from '@/components/Header'
 import Yoco from './Yoco'
 import { useSearchParams } from 'next/navigation'
 import { FaCheckCircle } from 'react-icons/fa' // place this at the top of your file
+import { useSpring, animated } from '@react-spring/web'
 
 export const Cashier = () => {
     useSaveLastVisitedPath()
@@ -251,37 +252,62 @@ export const Cashier = () => {
         })
     }
 
-    const CurrencyComponent = ({
-        isDeposit,
-        fee,
-        amount,
-    }: {
-        isDeposit: boolean
-        fee: number
-        amount: number
-    }) => {
-        const myZarAmount =
-            Math.floor(amount * randDollarEquivalent * 100) / 100
-        const myZarFinal =
-            Math.floor((myZarAmount - fee * randDollarEquivalent) * 100) / 100
-        return (
-            <>
-                <p className='text-center font-bold text-green-500'>
-                    1 USD = {randDollarEquivalent} ZAR
-                </p>
+    const CurrencyComponent = ({ amount }: { amount: number }) => {
+        const randDollarEquivalent = useCurrencyConverter('USD', 'ZAR') || 18
+        const [targetText, setTargetText] = useState('')
 
-                {isNaN(amount) ? (
-                    <></>
-                ) : isDeposit ? (
-                    <p className='text-center text-goldAli'>
-                        Pay {myZarAmount} ZAR & Receive {myZarFinal} ZAR
-                    </p>
-                ) : (
-                    <p className='text-center text-goldAli'>
-                        Withdraw {myZarAmount} ZAR & Receive {myZarFinal} ZAR
-                    </p>
-                )}
-            </>
+        useEffect(() => {
+            if (isNaN(amount) || amount <= 0) {
+                setTargetText(`1 USD = R${randDollarEquivalent.toFixed(2)}`)
+            } else {
+                const usd = `$${amount.toFixed(2)}`
+                const zar = `R${(amount * randDollarEquivalent).toFixed(2)}`
+                setTargetText(`${usd} = ${zar}`)
+            }
+        }, [amount, randDollarEquivalent])
+
+        return (
+            <div className='my-4 rounded-xl border border-goldAli bg-[#141a26] px-4 py-3 text-center shadow-md'>
+                <div className='flex justify-center gap-[2px] text-xl font-bold text-goldAli sm:text-2xl'>
+                    {targetText.split('').map((char, i) => (
+                        <div
+                            key={i}
+                            className='relative h-[1.6em] w-[1ch] overflow-hidden'
+                        >
+                            <div
+                                className='animate-roll text-center'
+                                style={{ animationDelay: `${i * 0.05}s` }}
+                            >
+                                {'0123456789.=RUSD$ '.split('').map((_, j) => (
+                                    <div
+                                        key={j}
+                                        className='h-[1.6em] leading-[1.6em]'
+                                    >
+                                        {char}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <style jsx>{`
+                    .animate-roll {
+                        display: flex;
+                        flex-direction: column;
+                        animation: spinDigit 0.5s ease-out;
+                    }
+
+                    @keyframes spinDigit {
+                        0% {
+                            transform: translateY(-100%);
+                        }
+                        100% {
+                            transform: translateY(0%);
+                        }
+                    }
+                `}</style>
+            </div>
         )
     }
 
@@ -372,51 +398,57 @@ export const Cashier = () => {
                                         Withdraw by {selectedPaymentMethod}
                                     </h2>
 
-                                    <CurrencyComponent
-                                        isDeposit={false}
-                                        fee={withdrawalFee}
-                                        amount={amount}
-                                    />
-
                                     <div className='flex flex-col gap-1 px-2 py-8'>
                                         <div className='my-2 flex justify-between'>
-                                            <div>Amount</div>
-                                            <div className=''>
-                                                $
-                                                {Math.floor(
-                                                    (amount -
-                                                        amount *
-                                                            paymentAgentsSettings
-                                                                .withdrawal
-                                                                .percentageFee) *
-                                                        100
-                                                ) / 100}
+                                            <div className='text-white'>
+                                                Withdrawal Amount
+                                            </div>
+                                            <div className='text-white'>
+                                                ${amount.toFixed(2)}
                                             </div>
                                         </div>
 
                                         <div className='my-2 flex justify-between'>
-                                            <div>Fee</div>
-                                            <div className=''>
+                                            <div className='text- white'>
+                                                Withdrawal Fee
+                                            </div>
+                                            <div className='text- white'>
+                                                -$
+                                                {(
+                                                    amount *
+                                                    paymentAgentsSettings
+                                                        .withdrawal
+                                                        .percentageFee
+                                                ).toFixed(2)}
+                                            </div>
+                                        </div>
+
+                                        <div className='mt-4 flex justify-between border-t border-gray-600 py-2'>
+                                            <div className='font-extrabold text-goldAli'>
+                                                Withdrawal Total
+                                            </div>
+                                            <div className='font-extrabold text-goldAli'>
                                                 $
-                                                {Math.floor(
+                                                {(
+                                                    amount -
                                                     amount *
                                                         paymentAgentsSettings
                                                             .withdrawal
-                                                            .percentageFee *
-                                                        100
-                                                ) / 100}
+                                                            .percentageFee
+                                                ).toFixed(2)}
                                             </div>
                                         </div>
 
-                                        <div className='mt-4 flex justify-between border-t py-2'>
-                                            <div className='font-extrabold'>
-                                                Total
-                                            </div>
-                                            <div className=''>
-                                                $
-                                                {Math.floor(amount * 100) / 100}
-                                            </div>
-                                        </div>
+                                        {/* Live ZAR Conversion Display */}
+                                        <CurrencyComponent
+                                            amount={
+                                                amount -
+                                                amount *
+                                                    paymentAgentsSettings
+                                                        .withdrawal
+                                                        .percentageFee
+                                            }
+                                        />
                                     </div>
 
                                     <div className='mt-4 flex flex-col gap-4'>
@@ -509,18 +541,14 @@ export const Cashier = () => {
                         </>
                     ) : (
                         <>
-                            <div className='mt-4 flex flex-col gap-4'>
+                            <div className='mx-auto mt-4 flex w-full max-w-md flex-col gap-3 px-4 text-sm sm:px-6 sm:text-base md:px-8'>
                                 {isConfirmShown ? (
                                     <>
                                         <h2 className='text-center text-2xl font-bold uppercase text-goldAli'>
                                             Withdraw by {selectedPaymentMethod}
                                         </h2>
 
-                                        <CurrencyComponent
-                                            isDeposit={false}
-                                            fee={withdrawalFee}
-                                            amount={amount}
-                                        />
+                                        <CurrencyComponent amount={amount} />
                                         <div className='flex flex-col'>
                                             <label className='text-left capitalize'>
                                                 Amount {accountInfo.currency}
@@ -610,15 +638,15 @@ export const Cashier = () => {
                                             fee={withdrawalFee}
                                             amount={amount}
                                         /> */}
-                                        <div className='mb-8 flex w-auto flex-col gap-4 md:w-[40vw]'>
+                                        <div className='mb-8 flex w-full flex-col gap-4 overflow-x-hidden'>
                                             {paymentAgentsSettings.withdrawal.methods.map(
                                                 method => (
                                                     <div
                                                         key={method.name}
-                                                        className='w-full scale-90 text-xl sm:scale-100 sm:text-base'
+                                                        className='w-full scale-95 text-base sm:scale-100 sm:text-base'
                                                     >
                                                         <button
-                                                            className={`w-full rounded-lg px-2 py-3 font-bold text-white transition-colors duration-200 sm:px-3 sm:py-2 ${
+                                                            className={`w-full rounded-lg px-3 py-3 font-bold text-white transition-colors duration-200 ${
                                                                 method.name ===
                                                                 'Paypal'
                                                                     ? 'bg-[#003087] hover:bg-[#00236e]'
@@ -666,8 +694,8 @@ export const Cashier = () => {
                                                             {method.name}
                                                         </button>
 
-                                                        <div className='mt-1 rounded-xl bg-[#ffffff] px-3 py-2 text-center shadow sm:px-4 sm:py-3'>
-                                                            <p className='mb-2 text-base font-bold text-[#1f2633] sm:mb-3 sm:text-lg'>
+                                                        <div className='mt-1 rounded-xl bg-white px-3 py-2 text-center shadow'>
+                                                            <p className='mb-2 text-sm font-bold text-[#1f2633] sm:text-base'>
                                                                 Supported
                                                                 Methods:
                                                             </p>
@@ -749,54 +777,61 @@ export const Cashier = () => {
                                 Pay with {selectedPaymentMethod}
                             </h2>
 
-                            <CurrencyComponent
-                                isDeposit={true}
-                                fee={depositFee}
-                                amount={amount}
-                            />
+                            {/* <CurrencyComponent amount={amount} /> */}
 
                             {isSummary ? (
                                 <>
                                     <div className='flex flex-col gap-1 px-2 py-8'>
                                         <div className='my-2 flex justify-between'>
-                                            <div>Amount</div>
-                                            <div className=''>
-                                                $
-                                                {Math.floor(
-                                                    (amount -
-                                                        amount *
-                                                            paymentAgentsSettings
-                                                                .deposit
-                                                                .percentageFee) *
-                                                        100
-                                                ) / 100}
+                                            <div className='text-white'>
+                                                Deposit Amount
+                                            </div>
+                                            <div className='text-white'>
+                                                ${amount.toFixed(2)}
                                             </div>
                                         </div>
 
                                         <div className='my-2 flex justify-between'>
-                                            <div>Fee</div>
-                                            <div className=''>
-                                                $
-                                                {Math.floor(
+                                            <div className='text-white'>
+                                                Deposit Fee
+                                            </div>
+                                            <div className='text-white'>
+                                                -$
+                                                {(
                                                     amount *
-                                                        paymentAgentsSettings
-                                                            .deposit
-                                                            .percentageFee *
-                                                        100
-                                                ) / 100}
+                                                    paymentAgentsSettings
+                                                        .deposit.percentageFee
+                                                ).toFixed(2)}
                                             </div>
                                         </div>
 
-                                        <div className='mt-4 flex justify-between border-t py-2'>
-                                            <div className='font-extrabold'>
-                                                Total
+                                        <div className='mt-4 flex justify-between border-t border-gray-600 py-2'>
+                                            <div className='font-extrabold text-goldAli'>
+                                                Total Recieved
                                             </div>
-                                            <div className=''>
+                                            <div className='font-extrabold text-goldAli'>
                                                 $
-                                                {Math.floor(amount * 100) / 100}
+                                                {(
+                                                    amount -
+                                                    amount *
+                                                        paymentAgentsSettings
+                                                            .deposit
+                                                            .percentageFee
+                                                ).toFixed(2)}
                                             </div>
                                         </div>
+
+                                        {/* ✅ Conversion for Total Paid */}
+                                        <CurrencyComponent
+                                            amount={
+                                                amount -
+                                                amount *
+                                                    paymentAgentsSettings
+                                                        .deposit.percentageFee
+                                            }
+                                        />
                                     </div>
+
                                     <div className='grid grid-cols-2 gap-2 py-4'>
                                         <div className=''>
                                             {(() => {
@@ -906,7 +941,12 @@ export const Cashier = () => {
                                     </div>
                                 </>
                             ) : (
-                                <div className='grid grid-cols-2 gap-2 py-4'>
+                                <div className='grid grid-cols-2 gap-2 py-0'>
+                                    {/* 💱 Conversion Rate Displayed First */}
+                                    <div className='col-span-2 mt-2'>
+                                        <CurrencyComponent amount={amount} />
+                                    </div>
+
                                     <div className='col-span-2 flex flex-col gap-1'>
                                         <div className='flex flex-col'>
                                             <label className='text-left capitalize'>
@@ -914,10 +954,11 @@ export const Cashier = () => {
                                             </label>
                                             <input
                                                 type='text'
-                                                onChange={e => {
-                                                    const value = e.target.value
-                                                    setWhatsappNumber(value)
-                                                }}
+                                                onChange={e =>
+                                                    setWhatsappNumber(
+                                                        e.target.value
+                                                    )
+                                                }
                                                 value={whatsappNumber}
                                                 className='rounded-lg border border-goldAli bg-white px-4 py-2 text-black'
                                                 placeholder='Enter Whatsapp Number'
@@ -932,20 +973,45 @@ export const Cashier = () => {
                                             </label>
                                             <input
                                                 type='number'
-                                                step={0.01}
+                                                step={1}
+                                                min={12}
                                                 onChange={e => {
                                                     const value = e.target.value
-                                                    setAmount(parseFloat(value))
+                                                    if (value === '') {
+                                                        setAmount(NaN)
+                                                        return
+                                                    }
+
+                                                    const parsed =
+                                                        parseFloat(value)
+                                                    setAmount(
+                                                        isNaN(parsed)
+                                                            ? NaN
+                                                            : parsed
+                                                    )
                                                 }}
-                                                value={amount}
+                                                value={
+                                                    isNaN(amount) ? '' : amount
+                                                }
                                                 className='rounded-lg border border-goldAli bg-white px-4 py-2 text-black'
-                                                placeholder='Enter Amount'
+                                                placeholder='Enter Amount (min $12)'
                                             />
                                         </div>
                                     </div>
+
                                     <div className=''>
                                         <button
                                             onClick={async () => {
+                                                if (
+                                                    amount < 12 ||
+                                                    isNaN(amount)
+                                                ) {
+                                                    toast.error(
+                                                        'Minimum deposit is $12'
+                                                    )
+                                                    return
+                                                }
+
                                                 await depositHandler()
                                             }}
                                             className='w-full rounded-lg bg-green-500 px-4 py-3 text-white transition-opacity duration-300 hover:opacity-80'
