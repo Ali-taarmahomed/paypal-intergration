@@ -16,21 +16,23 @@ export const Modal = ({
     if (isClosed) return null
 
     return (
-        <div
-            className='fixed inset-0 z-50 flex items-center justify-center'
-            onClick={() => setIsClosed(true)} // 👈 click anywhere closes modal
-        >
-            {/* Dark background */}
-            <div className='absolute inset-0 z-40 bg-black opacity-80'></div>
-
-            {/* Modal content */}
+        <>
+            {/* ✅ Backdrop that closes modal on click */}
             <div
-                ref={modalRef}
-                className='relative z-50 max-h-[90vh] w-auto overflow-y-auto rounded-lg border-4 border-goldAli bg-blueAli p-4 shadow-xl'
-                onClick={e => e.stopPropagation()} // 👈 stop click INSIDE modal from closing
-            >
-                {children}
+                className='fixed inset-0 z-40 bg-black opacity-80'
+                onClick={() => setIsClosed(true)}
+            />
+
+            {/* ✅ Modal content on top */}
+            <div className='fixed inset-0 z-50 flex items-center justify-center p-2'>
+                <div
+                    ref={modalRef}
+                    onClick={e => e.stopPropagation()}
+                    className='max-h-[90vh] w-auto overflow-y-auto rounded-lg border-4 border-goldAli bg-blueAli p-4 shadow-xl'
+                >
+                    {children}
+                </div>
             </div>
-        </div>
+        </>
     )
 }
