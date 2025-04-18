@@ -3,12 +3,15 @@
 import { useLocalStorageWithExpiry } from '@/hooks/useLocalStorageWithExpiry'
 import { useEffect } from 'react'
 
-export const usePayPalStatusSender = () => {
+export const usePayPalStatusSender = (token: string | null) => {
     const { value: transactionId } = useLocalStorageWithExpiry('paypal_id')
 
     useEffect(() => {
         const sendToWebhook = async () => {
-            if (!transactionId) return
+            console.log('🧪 Token:', token)
+            console.log('🧪 PayPal Transaction ID:', transactionId)
+
+            if (!transactionId || !token) return
 
             try {
                 const response = await fetch('/api/paypal/check-status', {
@@ -16,16 +19,25 @@ export const usePayPalStatusSender = () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ id: transactionId }),
+                    body: JSON.stringify({
+                        id: transactionId,
+                        token: token,
+                    }),
                 })
 
                 const data = await response.json()
-                console.log('Transaction Status Response:', data)
+
+                if (data.completed) {
+                    console.log('✅ PayPal capture completed. Emails sent.')
+                    localStorage.removeItem('paypal_id') // clear to avoid duplicates
+                } else {
+                    console.warn('⚠️ PayPal capture NOT completed:', data)
+                }
             } catch (error) {
-                console.error('Error sending to webhook:', error)
+                console.error('❌ Error sending to webhook:', error)
             }
         }
 
         sendToWebhook()
-    }, [transactionId])
+    }, [transactionId, token])
 }

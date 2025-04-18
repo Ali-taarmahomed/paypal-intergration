@@ -7,11 +7,8 @@ import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePayPalStatusSender } from '@/hooks/usePayPalStatusSender'
-import { useLocalStorageWithExpiry } from '@/hooks/useLocalStorageWithExpiry' // ✅ import your hook
 
 export const PaymentSuccessModal: React.FC = () => {
-    usePayPalStatusSender()
-
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isOpen, setIsOpen] = useState(true)
@@ -23,14 +20,14 @@ export const PaymentSuccessModal: React.FC = () => {
             ? sessionStorage.getItem('lastTransactionCode')
             : null
 
-    // ✅ Use your hook to fetch PayPal ID with expiry handling
-    const { value: paypalOrderId } = useLocalStorageWithExpiry('paypal_id')
+    // ✅ Run PayPal hook and pass token
+    usePayPalStatusSender(token)
 
     const redirectToCashier = (token: string) => {
         router.push(`/cashier?token=${token}`)
     }
 
-    // ✅ Yoco email logic — leave as-is
+    // ✅ Yoco email logic — unchanged
     useEffect(() => {
         const sendCustomerEmail = async () => {
             if (!token || !transactionCode) return
@@ -42,56 +39,20 @@ export const PaymentSuccessModal: React.FC = () => {
                 const data = await res.json()
 
                 if (data.success) {
-                    console.log('✅ Customer confirmation email sent')
+                    console.log('✅ Yoco: Customer confirmation email sent')
                 } else {
                     console.warn(
-                        '⚠️ Failed to send customer email:',
+                        '⚠️ Yoco: Failed to send customer email:',
                         data.error
                     )
                 }
             } catch (error) {
-                console.error('❌ Email sending error:', error)
+                console.error('❌ Yoco: Email sending error:', error)
             }
         }
 
         sendCustomerEmail()
     }, [token, transactionCode])
-
-    // ✅ PayPal flow — uses capture + server-side email logic
-    useEffect(() => {
-        const sendPayPalStatus = async () => {
-            console.log('🧪 TOKEN FROM URL:', token)
-            console.log('🧪 PAYPAL ORDER ID from hook:', paypalOrderId)
-
-            if (!paypalOrderId || !token) return
-
-            try {
-                const res = await fetch('/api/paypal/check-status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        id: paypalOrderId,
-                        token: token,
-                    }),
-                })
-
-                const data = await res.json()
-
-                if (data.completed) {
-                    console.log('✅ PayPal status confirmed and emails sent')
-                    localStorage.removeItem('paypal_id') // optional cleanup
-                } else {
-                    console.warn('⚠️ PayPal payment not completed:', data)
-                }
-            } catch (err) {
-                console.error('❌ Failed to verify PayPal payment:', err)
-            }
-        }
-
-        sendPayPalStatus()
-    }, [paypalOrderId, token])
 
     useEffect(() => {
         setTimeout(() => {
