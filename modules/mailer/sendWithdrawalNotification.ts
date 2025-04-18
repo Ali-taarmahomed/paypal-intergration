@@ -24,7 +24,7 @@ export const sendWithdrawalEmail = async ({
     const mailOptionsCustomer = {
         from: '"DollarTradeClub" <dollartradeclubpayments@gmail.com>',
         to: withdrawal.email,
-        subject: '💸 Withdrawal Request Received – DollarTradeClub',
+        subject: '💸 Withdrawal Request Received',
         html,
     }
 
