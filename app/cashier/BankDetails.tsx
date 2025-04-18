@@ -385,7 +385,7 @@ export const UpdateBankDetails = ({
                     return (
                         <div
                             key={index}
-                            className='rounded-lg border bg-blueAli px-3 py-4 md:py-8'
+                            className='mx-auto max-h-[70vh] w-full max-w-[500px] overflow-y-auto rounded-lg border bg-blueAli px-3 py-4 md:py-8'
                         >
                             <h2 className='text-md text-center font-bold uppercase text-goldAli'>
                                 Update Payment Method
