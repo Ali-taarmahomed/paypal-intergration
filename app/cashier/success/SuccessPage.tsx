@@ -1,11 +1,13 @@
 'use client'
+
 import React, { useEffect, useState } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { AppDispatch, RootState } from '@/state/store'
+import { useSelector } from 'react-redux'
+import { RootState } from '@/state/store'
 import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { usePayPalStatusSender } from '@/hooks/usePayPalStatusSender'
+import { useLocalStorageWithExpiry } from '@/hooks/useLocalStorageWithExpiry' // ✅ import your hook
 
 export const PaymentSuccessModal: React.FC = () => {
     usePayPalStatusSender()
@@ -21,14 +23,14 @@ export const PaymentSuccessModal: React.FC = () => {
             ? sessionStorage.getItem('lastTransactionCode')
             : null
 
-    const paypalOrderId =
-        typeof window !== 'undefined' ? localStorage.getItem('paypal_id') : null
+    // ✅ Use your hook to fetch PayPal ID with expiry handling
+    const { value: paypalOrderId } = useLocalStorageWithExpiry('paypal_id')
 
     const redirectToCashier = (token: string) => {
         router.push(`/cashier?token=${token}`)
     }
 
-    // ✅ Yoco email logic — keep this exactly as-is
+    // ✅ Yoco email logic — leave as-is
     useEffect(() => {
         const sendCustomerEmail = async () => {
             if (!token || !transactionCode) return
@@ -55,9 +57,12 @@ export const PaymentSuccessModal: React.FC = () => {
         sendCustomerEmail()
     }, [token, transactionCode])
 
-    // ✅ NEW: PayPal email trigger via capture + server-side email logic
+    // ✅ PayPal flow — uses capture + server-side email logic
     useEffect(() => {
         const sendPayPalStatus = async () => {
+            console.log('🧪 TOKEN FROM URL:', token)
+            console.log('🧪 PAYPAL ORDER ID from hook:', paypalOrderId)
+
             if (!paypalOrderId || !token) return
 
             try {
@@ -76,7 +81,7 @@ export const PaymentSuccessModal: React.FC = () => {
 
                 if (data.completed) {
                     console.log('✅ PayPal status confirmed and emails sent')
-                    localStorage.removeItem('paypal_id') // clear after use
+                    localStorage.removeItem('paypal_id') // optional cleanup
                 } else {
                     console.warn('⚠️ PayPal payment not completed:', data)
                 }
