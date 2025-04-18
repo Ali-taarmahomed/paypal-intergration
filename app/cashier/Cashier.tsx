@@ -1144,30 +1144,35 @@ const TransactionsCard = ({
     isSuccessful,
 }: {
     isDeposit: boolean
-    amountUSD: number
+    amountUSD: number // still the full amount before fees
     exchangeRate: number
     date: Date
     isSuccessful: boolean
 }) => {
-    const amountZAR = (amountUSD * exchangeRate).toFixed(2)
+    const feePercentage = isDeposit
+        ? paymentAgentsSettings.deposit.percentageFee
+        : paymentAgentsSettings.withdrawal.percentageFee
+
+    const amountAfterFees = amountUSD - amountUSD * feePercentage
+    const amountZAR = (amountAfterFees * exchangeRate).toFixed(2)
 
     return (
         <div className='w-full rounded-xl bg-gray-200 p-6 shadow-lg hover:shadow-xl'>
             <div className='flex items-center justify-between'>
                 <div className='text-right'>
-                    {isDeposit ? (
-                        <h2 className='text-2xl font-semibold text-red-500'>
-                            Deposit
-                        </h2>
-                    ) : (
-                        <h2 className='text-2xl font-semibold text-green-500'>
-                            Withdrawal
-                        </h2>
-                    )}
+                    <h2
+                        className={`text-2xl font-semibold ${
+                            isDeposit ? 'text-red-500' : 'text-green-500'
+                        }`}
+                    >
+                        {isDeposit ? 'Deposit' : 'Withdrawal'}
+                    </h2>
                 </div>
 
                 <div
-                    className={`rounded-full p-4 ${isDeposit ? 'bg-red-100' : 'bg-green-100'}`}
+                    className={`rounded-full p-4 ${
+                        isDeposit ? 'bg-red-100' : 'bg-green-100'
+                    }`}
                 >
                     {isDeposit ? (
                         <FaArrowUp size={24} className='text-red-500' />
@@ -1180,7 +1185,7 @@ const TransactionsCard = ({
             <div className='grid grid-cols-2'>
                 <div className='mt-4'>
                     <p className='text-2xl font-bold text-gray-800'>
-                        ${amountUSD.toFixed(2)} USD
+                        ${amountAfterFees.toFixed(2)} USD
                     </p>
                     <p className='text-lg text-gray-500'>R{amountZAR} ZAR</p>
                 </div>
@@ -1206,11 +1211,17 @@ const TransactionsCard = ({
                 </div>
             </div>
 
-            {/* <div className={`mt-4 py-2 px-4 rounded-md text-white ${isDeposit ? 'bg-green-500' : 'bg-red-500'}`}>
-        {isDeposit ? 'Funds Added ✅' : 'Funds Withdrawn ⛔'}
-      </div> */}
-
-            <div className='text-goldAli'>{String(date)}</div>
+            <div className='text-goldAli'>
+                {new Date(date).toLocaleString('en-ZA', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                })}{' '}
+                (GMT+2)
+            </div>
         </div>
     )
 }
