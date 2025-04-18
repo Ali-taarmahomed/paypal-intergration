@@ -25,8 +25,7 @@ export const PaypalForm = ({
             })
             console.log('Order Created:', res.data)
 
-            //save id to localStorage
-
+            // Save PayPal order ID
             setItem(res.data.id)
 
             const approveUrl = res.data.links.find(
@@ -34,6 +33,8 @@ export const PaypalForm = ({
             )?.href
 
             if (approveUrl) {
+                // ✅ Store the transactionCode so SuccessPage can use it
+                sessionStorage.setItem('lastTransactionCode', transactionCode)
                 window.location.href = approveUrl
             } else {
                 alert('Failed to get approval URL')

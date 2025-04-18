@@ -5,11 +5,8 @@ import { AppDispatch, RootState } from '@/state/store'
 import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { usePayPalStatusSender } from '@/hooks/usePayPalStatusSender'
 
 export const PaymentSuccessModal: React.FC = () => {
-    usePayPalStatusSender()
-
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isOpen, setIsOpen] = useState(true)
@@ -20,36 +17,43 @@ export const PaymentSuccessModal: React.FC = () => {
         typeof window !== 'undefined'
             ? sessionStorage.getItem('lastTransactionCode')
             : null
+    const paypalOrderId =
+        typeof window !== 'undefined' ? localStorage.getItem('paypal_id') : null
 
     const redirectToCashier = (token: string) => {
         router.push(`/cashier?token=${token}`)
     }
 
     useEffect(() => {
-        const sendCustomerEmail = async () => {
-            if (!token || !transactionCode) return
+        const sendPayPalStatus = async () => {
+            if (!paypalOrderId || !token) return
 
             try {
-                const res = await fetch(
-                    `/api/send-confirmation?transaction=${transactionCode}&token=${token}`
-                )
+                const res = await fetch('/api/paypal/check-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: paypalOrderId,
+                        token: token,
+                    }),
+                })
+
                 const data = await res.json()
 
-                if (data.success) {
-                    console.log('✅ Customer confirmation email sent')
+                if (data.completed) {
+                    console.log('✅ PayPal status confirmed and emails sent')
                 } else {
-                    console.warn(
-                        '⚠️ Failed to send customer email:',
-                        data.error
-                    )
+                    console.warn('⚠️ PayPal payment not completed:', data)
                 }
-            } catch (error) {
-                console.error('❌ Email sending error:', error)
+            } catch (err) {
+                console.error('❌ Failed to verify PayPal payment:', err)
             }
         }
 
-        sendCustomerEmail()
-    }, [token, transactionCode])
+        sendPayPalStatus()
+    }, [paypalOrderId, token])
 
     useEffect(() => {
         setTimeout(() => {

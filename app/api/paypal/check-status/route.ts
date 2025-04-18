@@ -2,21 +2,22 @@ import { updateDeposits } from '@/modules/cashier/action'
 import { payPalConfig } from '@/modules/cashier/settings'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAccessToken } from '../getAccessToken'
+import { prisma } from '@/modules/db'
+import { sendPaymentEmail } from '@/modules/mailer/sendPaymentNotification'
 
 export async function POST(req: NextRequest) {
-    console.log('check status worked')
+    console.log('✅ PayPal status check started')
 
-    const { id: orderId } = await req.json()
+    const { id: orderId, token } = await req.json()
 
-    if (!orderId) {
+    if (!orderId || !token) {
         return NextResponse.json(
-            { error: 'Missing PayPal Order ID' },
+            { error: 'Missing PayPal Order ID or Token' },
             { status: 400 }
         )
     }
 
     let PAYPAL_API_URL = payPalConfig.PAYPAL_LIVE_API_URL
-
     if (payPalConfig.sandbox) {
         PAYPAL_API_URL = payPalConfig.PAYPAL_SANDBOX_API_URL
     }
@@ -24,7 +25,6 @@ export async function POST(req: NextRequest) {
     const access_token = await getAccessToken()
 
     try {
-        // Send POST request to capture the payment
         const captureRes = await fetch(
             `${PAYPAL_API_URL}/v2/checkout/orders/${orderId}/capture`,
             {
@@ -44,11 +44,7 @@ export async function POST(req: NextRequest) {
             )
         }
 
-        console.log('check status working fine')
-
         const captureData = await captureRes.json()
-
-        // Pull out the capture ID and status
         const capture =
             captureData?.purchase_units?.[0]?.payments?.captures?.[0]
         const captureId = capture?.id
@@ -62,10 +58,31 @@ export async function POST(req: NextRequest) {
             raw: captureData,
         }
 
-        console.log('capture res', res)
-
         if (res.completed) {
+            // ✅ Update deposit to mark as paid
             await updateDeposits({ transactionCode: orderId })
+
+            // ✅ Now fetch the deposit
+            const deposit = await prisma.deposits.findFirst({
+                where: { transactionCode: orderId },
+            })
+
+            // ✅ Send customer email (after webhook confirms payment)
+            if (deposit && deposit.isPaid) {
+                await sendPaymentEmail({
+                    subject: '🎉 Deposit Confirmation – Thank You!',
+                    token,
+                    to: deposit.email,
+                    data: {
+                        ...deposit,
+                        amountPaidInUsd: Number(deposit.amountPaidInUsd),
+                        agentFeeInUsd: Number(deposit.agentFeeInUsd),
+                        amountAfterFeeInUsd: Number(
+                            deposit.amountAfterFeeInUsd
+                        ),
+                    },
+                })
+            }
         }
 
         return NextResponse.json(res)
