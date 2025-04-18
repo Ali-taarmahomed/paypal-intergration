@@ -98,29 +98,6 @@ export const Cashier = () => {
         return () => {}
     }, [accountInfo.loginid])
 
-    useEffect(() => {
-        const searchParams = new URLSearchParams(window.location.search)
-        const token = searchParams.get('token')
-        const transactionCode = sessionStorage.getItem('lastTransactionCode')
-
-        if (token && transactionCode) {
-            fetch(
-                `/api/send-confirmation?transaction=${transactionCode}&token=${token}`
-            )
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('📧 Customer email sent.')
-                    } else {
-                        console.warn(
-                            '⚠️ Could not send customer email:',
-                            data.error
-                        )
-                    }
-                })
-        }
-    }, [])
-
     //withdraw
 
     const sendEmailVerificationWithdrawalReq = () => {
