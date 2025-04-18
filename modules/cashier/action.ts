@@ -5,7 +5,10 @@ import { verifyHash } from '@/helper/hashing'
 import { AccountTypeT } from '@/app/cashier/BankDetails'
 import { encodeData } from '@/lib/custom-encode-decode'
 import axios from 'axios'
-import { sendPaymentEmail } from '@/modules/mailer/sendPaymentNotification'
+import {
+    sendPaymentEmail,
+    sendWithdrawalEmail,
+} from '@/modules/mailer/sendPaymentNotification'
 
 export type DepositT = {
     id: string
@@ -246,11 +249,28 @@ export const withdraw = async ({
         bankDetailsId: data.id,
     }
 
-    const res = await prisma.withdrawals.create({ data: myData })
+    const result = await prisma.withdrawals.create({ data: myData })
+    const res: WithdrawalT = {
+        ...result,
+        amountWithdrawnInUsd: Number(result.amountWithdrawnInUsd),
+        agentFeeInUsd: Number(result.agentFeeInUsd),
+        amountAfterFeeInUsd: Number(result.amountAfterFeeInUsd),
+    }
+
+    // ✅ Send admin + customer email here
+    await sendWithdrawalEmail({
+        withdrawal: res,
+        token: loginId, // same as deposits use accountInfo.token
+    })
 
     return {
         status: 'success',
         message: 'Your Withdrawal is being processed please wait',
+    }
+
+    return {
+        status: 'success',
+        message: 'Withdrawl Success. Please check your email.',
     }
 }
 
