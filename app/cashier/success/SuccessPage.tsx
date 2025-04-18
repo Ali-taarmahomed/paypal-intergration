@@ -6,7 +6,7 @@ import { RootState } from '@/state/store'
 import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { usePayPalStatusSender } from '@/hooks/usePayPalStatusSender'
+import { useLocalStorageWithExpiry } from '@/hooks/useLocalStorageWithExpiry'
 
 export const PaymentSuccessModal: React.FC = () => {
     const router = useRouter()
@@ -20,14 +20,13 @@ export const PaymentSuccessModal: React.FC = () => {
             ? sessionStorage.getItem('lastTransactionCode')
             : null
 
-    // ✅ Run PayPal hook and pass token
-    usePayPalStatusSender(token)
+    const { value: paypalOrderId } = useLocalStorageWithExpiry('paypal_id')
 
     const redirectToCashier = (token: string) => {
         router.push(`/cashier?token=${token}`)
     }
 
-    // ✅ Yoco email logic — unchanged
+    // ✅ Yoco: Send confirmation email using transactionCode
     useEffect(() => {
         const sendCustomerEmail = async () => {
             if (!token || !transactionCode) return
@@ -53,6 +52,45 @@ export const PaymentSuccessModal: React.FC = () => {
 
         sendCustomerEmail()
     }, [token, transactionCode])
+
+    // ✅ PayPal: Send capture + webhook-triggered confirmation email
+    useEffect(() => {
+        const sendPayPalStatus = async () => {
+            if (!paypalOrderId || !token) return
+
+            console.log('🧪 PayPal ID:', paypalOrderId)
+            console.log('🧪 Token from URL:', token)
+
+            try {
+                const res = await fetch('/api/paypal/check-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: paypalOrderId,
+                        token: token,
+                    }),
+                })
+
+                const data = await res.json()
+
+                if (data.completed) {
+                    console.log('✅ PayPal: Emails sent via webhook.')
+                    localStorage.removeItem('paypal_id')
+                } else {
+                    console.warn(
+                        '⚠️ PayPal: Payment not marked as completed:',
+                        data
+                    )
+                }
+            } catch (err) {
+                console.error('❌ PayPal: Error verifying transaction:', err)
+            }
+        }
+
+        sendPayPalStatus()
+    }, [paypalOrderId, token])
 
     useEffect(() => {
         setTimeout(() => {
