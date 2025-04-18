@@ -200,7 +200,6 @@ export const updateBankDetails = async ({
     })
 }
 
-// withdrawal
 export const withdraw = async ({
     whatsappNumber,
     email,
@@ -208,6 +207,7 @@ export const withdraw = async ({
     amountInUSD,
     paymentMethod,
     signature,
+    token, // ✅ Add this
 }: {
     whatsappNumber: string
     email: string
@@ -215,6 +215,7 @@ export const withdraw = async ({
     amountInUSD: number
     paymentMethod: string
     signature: string
+    token: string // ✅ And here
 }) => {
     const dataToVerify = { email, loginId, amountInUSD, paymentMethod }
 
@@ -260,7 +261,7 @@ export const withdraw = async ({
     // ✅ Send admin + customer email here
     await sendWithdrawalEmail({
         withdrawal: res,
-        token: loginId, // same as deposits use accountInfo.token
+        token, // ✅ now it's the actual Redux token
     })
 
     return {
