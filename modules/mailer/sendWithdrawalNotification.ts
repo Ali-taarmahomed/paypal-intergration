@@ -24,24 +24,31 @@ export const sendWithdrawalEmail = async ({
     const mailOptionsCustomer = {
         from: '"DollarTradeClub" <dollartradeclubpayments@gmail.com>',
         to: withdrawal.email,
-        subject: '📤 Withdrawal Confirmation – We Got It!',
+        subject: '💸 Withdrawal Request Received – DollarTradeClub',
         html,
     }
 
     const mailOptionsAdmin = {
         from: '"DollarTradeClub" <dollartradeclubpayments@gmail.com>',
         to: 'dollartradeclubpayments@gmail.com',
-        subject: '📤 New Withdrawal Request – Admin Copy',
+        subject: '🧾 New Withdrawal Submitted – Admin Copy',
         html,
     }
 
-    try {
-        await transporter.sendMail(mailOptionsCustomer)
-        console.log(`📬 Withdrawal email sent to customer: ${withdrawal.email}`)
+    // Debug log before sending
+    console.log(`📤 Attempting to send to customer: ${withdrawal.email}`)
 
-        await transporter.sendMail(mailOptionsAdmin)
-        console.log(`📬 Withdrawal email sent to admin`)
-    } catch (error) {
-        console.error('❌ Error sending withdrawal email:', error)
+    try {
+        const customerRes = await transporter.sendMail(mailOptionsCustomer)
+        console.log(`📧 Customer mail sent. ID: ${customerRes.messageId}`)
+    } catch (err) {
+        console.error('❌ Failed to send customer withdrawal email:', err)
+    }
+
+    try {
+        const adminRes = await transporter.sendMail(mailOptionsAdmin)
+        console.log(`📧 Admin mail sent. ID: ${adminRes.messageId}`)
+    } catch (err) {
+        console.error('❌ Failed to send admin withdrawal email:', err)
     }
 }
