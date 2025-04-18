@@ -1,0 +1,97 @@
+'use client'
+import { useEffect, useState } from 'react'
+
+export const PwaInstall = () => {
+    const [showInstallModal, setShowInstallModal] = useState<boolean>(false)
+    const [prompt, setPrompt] = useState<any>()
+
+    useEffect(() => {
+        function handleBeforeInstallPrompt(event: any) {
+            event.preventDefault()
+            setPrompt(event)
+
+            if (!window.matchMedia('display-mode:standalone').matches) {
+                setShowInstallModal(true)
+            }
+        }
+
+        window.addEventListener(
+            'beforeinstallprompt',
+            handleBeforeInstallPrompt
+        )
+
+        return () => {
+            window.removeEventListener(
+                'beforeinstallprompt',
+                handleBeforeInstallPrompt
+            )
+        }
+    }, [])
+
+    function handleClose() {
+        setShowInstallModal(false)
+    }
+
+    function handleInstall() {
+        if (prompt) {
+            prompt.prompt()
+
+            prompt.userChoice.then((choiceResult: any) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('installed')
+                } else {
+                    console.log('Cancelled')
+                }
+
+                setPrompt(null)
+                setShowInstallModal(false)
+            })
+        }
+    }
+
+    return (
+        <PwaModal
+            show={showInstallModal}
+            onClose={handleClose}
+            onInstall={handleInstall}
+        ></PwaModal>
+    )
+}
+
+const PwaModal = ({ show, onClose, onInstall }: any) => {
+    const blurBackground = show ? 'backdrop-blur' : ''
+    return (
+        show && (
+            <div className='fixed inset-0 flex items-center justify-center z-50'>
+                <div className='bg-white w-auto p-4 rounded-lg shadow-xl border border-gray-100'>
+                    <h2 className='text-lg text-center font-semibold mb-2 text-black'>
+                        Install App
+                    </h2>
+                    <p className='text-sm mb-4 text-black'>
+                        Access The bots with ease by installing our app
+                    </p>
+
+                    <div className='flex justify-evenly mx-auto'>
+                        <button
+                            onClick={onInstall}
+                            className='bg-goldAli hover:bg-blueAli text-white px-4 rounded-md'
+                        >
+                            Install
+                        </button>
+
+                        <button
+                            onClick={onClose}
+                            className='bg-gray-800 hover:bg-gray-500 text-white px-4 rounded-md'
+                        >
+                            Cancel
+                        </button>
+                    </div>
+
+                    <div
+                        className={`fixed inset-0 bg-blueAli opacity-50 -z-10 ${blurBackground}`}
+                    ></div>
+                </div>
+            </div>
+        )
+    )
+}

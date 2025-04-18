@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+// model Admins {
+//   id        String   @id @default(cuid())
+//   email     String   @unique
+//   loginId   String   @unique
+//   password  String
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
+
+model BotsBought {
+  id               String   @id @default(cuid())
+  email            String
+  loginId          String
+  botName          String
+  amountInUSD      Decimal
+  confirmationCode String
+  isConfirmed      Boolean
+  isDeclined       Boolean // New field added
+  subscriptionDays Int
+  isValid          Boolean
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model BankDetails {
+  id                 String        @id @default(cuid())
+  email              String
+  loginId            String
+  fullName           String
+  whatsappNumber      String
+  paymentMethod      String
+  bankName           String
+  accountHoldersName String
+  accountNumber      String
+  accountType        String // Cheque/Savings
+  branchCode         String
+  paypalEmail        String
+  usdtTrc20Address   String
+  eWalletMobile      String
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  Withdrawals        Withdrawals[]
+}
+
+model Deposits {
+  id                  String   @id @default(cuid())
+  email               String
+  loginId             String
+  fullName            String
+  whatsappNumber      String
+  amountPaidInUsd     Decimal
+  agentFeeInUsd       Decimal
+  amountAfterFeeInUsd Decimal
+  transactionCode     String
+  paymentMethod       String
+  isPaid              Boolean
+  isConfirmedByAdmin  Boolean
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Withdrawals {
+  id                   String      @id @default(cuid())
+  email                String
+  loginId              String
+  fullName             String
+  whatsappNumber      String
+  amountWithdrawnInUsd Decimal
+  agentFeeInUsd        Decimal
+  amountAfterFeeInUsd  Decimal
+  paymentMethod        String
+  transactionCode      String
+  isConfirmedByAdmin   Boolean
+  bank                 BankDetails @relation(fields: [bankDetailsId], references: [id])
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  bankDetailsId        String
+}

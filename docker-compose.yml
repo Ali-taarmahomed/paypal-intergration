@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+    psql:
+        image: postgres:latest
+        restart: always
+        ports:
+            - 5432:5432
+        environment:
+            POSTGRES_DB: deriv-ali
+            # POSTGRES_USER: muchekechege
+            POSTGRES_PASSWORD: 123456
+        volumes:
+            # - ./init_db/deriv-ali.sql:/docker-entrypoint-initdb.d/deriv-ali.sql
+            - psql-deriv-ali:/var/lib/postgresql
+
+volumes:
+    psql-deriv-ali:

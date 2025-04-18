@@ -1,0 +1,47 @@
+localhost:3000/accounts?acct1=Token&token1=sExik8Z1HjRNbJu&cur1=USD   admin
+localhost:3000/accounts?acct1=Token&token1=su8IaWffnTDoEgl&cur1=USD   user
+
+https://97d6-102-212-236-179.ngrok-free.app/accounts?acct1=Token&token1=su8IaWffnTDoEgl&cur1=USD
+
+localhost:3000/accounts?acct1=Token&token1=bmZgrTFUZpbqNo0&cur1=USD   user test
+
+
+admin token sExik8Z1HjRNbJu
+user token su8IaWffnTDoEgl
+
+
+
+
+
+localhost:3000/?action=payment_withdraw&code=BE5nH6Hy&lang=EN&loginid=CR7926570
+
+->paypal
+->Login to cashier directly
+
+
+sb-fmxt531646962@business.example.com
+hI8d=<M7
+
+yoco register webhook
+
+$headers = @{
+  "Content-Type" = "application/json"
+  "Authorization" = "Bearer sk_test_98a1a28c6mrz9y8e2bc445594979"
+}
+
+$body = @{
+  name   = "DTC Test Webhook"
+  url    = "https://test.dollartradeclub.co.za/api/yoco/yoco"
+  events = @("payment.succeeded")
+  mode   = "test"
+} | ConvertTo-Json -Depth 3
+
+Invoke-RestMethod -Uri "https://payments.yoco.com/api/webhooks" -Method POST -Headers $headers -Body $body
+
+
+withdraw headers
+exchange rate on withdraw
+whatsapp number on withdraw and deposit
+edit withdraw details on withdraw
+remove the none option on withdrawal Method
+check link clicking on withdraw verification code
