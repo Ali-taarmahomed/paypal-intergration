@@ -5,8 +5,11 @@ import { AppDispatch, RootState } from '@/state/store'
 import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { usePayPalStatusSender } from '@/hooks/usePayPalStatusSender'
 
 export const PaymentSuccessModal: React.FC = () => {
+    usePayPalStatusSender()
+
     const router = useRouter()
     const searchParams = useSearchParams()
     const [isOpen, setIsOpen] = useState(true)
@@ -17,6 +20,7 @@ export const PaymentSuccessModal: React.FC = () => {
         typeof window !== 'undefined'
             ? sessionStorage.getItem('lastTransactionCode')
             : null
+
     const paypalOrderId =
         typeof window !== 'undefined' ? localStorage.getItem('paypal_id') : null
 
@@ -24,6 +28,34 @@ export const PaymentSuccessModal: React.FC = () => {
         router.push(`/cashier?token=${token}`)
     }
 
+    // ✅ Yoco email logic — keep this exactly as-is
+    useEffect(() => {
+        const sendCustomerEmail = async () => {
+            if (!token || !transactionCode) return
+
+            try {
+                const res = await fetch(
+                    `/api/send-confirmation?transaction=${transactionCode}&token=${token}`
+                )
+                const data = await res.json()
+
+                if (data.success) {
+                    console.log('✅ Customer confirmation email sent')
+                } else {
+                    console.warn(
+                        '⚠️ Failed to send customer email:',
+                        data.error
+                    )
+                }
+            } catch (error) {
+                console.error('❌ Email sending error:', error)
+            }
+        }
+
+        sendCustomerEmail()
+    }, [token, transactionCode])
+
+    // ✅ NEW: PayPal email trigger via capture + server-side email logic
     useEffect(() => {
         const sendPayPalStatus = async () => {
             if (!paypalOrderId || !token) return
@@ -44,6 +76,7 @@ export const PaymentSuccessModal: React.FC = () => {
 
                 if (data.completed) {
                     console.log('✅ PayPal status confirmed and emails sent')
+                    localStorage.removeItem('paypal_id') // clear after use
                 } else {
                     console.warn('⚠️ PayPal payment not completed:', data)
                 }
