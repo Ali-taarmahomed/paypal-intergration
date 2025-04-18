@@ -5,16 +5,15 @@ import { useSelector } from 'react-redux'
 import { RootState } from '@/state/store'
 import Loader from '@/components/Loader'
 import { FaCheckCircle } from 'react-icons/fa'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useLocalStorageWithExpiry } from '@/hooks/useLocalStorageWithExpiry'
 
 export const PaymentSuccessModal: React.FC = () => {
     const router = useRouter()
-    const searchParams = useSearchParams()
     const [isOpen, setIsOpen] = useState(true)
     const accountInfo = useSelector((state: RootState) => state.derivUser)
 
-    const token = searchParams.get('token')
+    const token = accountInfo.token
     const transactionCode =
         typeof window !== 'undefined'
             ? sessionStorage.getItem('lastTransactionCode')
@@ -26,7 +25,7 @@ export const PaymentSuccessModal: React.FC = () => {
         router.push(`/cashier?token=${token}`)
     }
 
-    // ✅ Yoco: Send confirmation email using transactionCode
+    // ✅ Yoco confirmation email
     useEffect(() => {
         const sendCustomerEmail = async () => {
             if (!token || !transactionCode) return
@@ -35,15 +34,13 @@ export const PaymentSuccessModal: React.FC = () => {
                 const res = await fetch(
                     `/api/send-confirmation?transaction=${transactionCode}&token=${token}`
                 )
+
                 const data = await res.json()
 
                 if (data.success) {
                     console.log('✅ Yoco: Customer confirmation email sent')
                 } else {
-                    console.warn(
-                        '⚠️ Yoco: Failed to send customer email:',
-                        data.error
-                    )
+                    console.warn('⚠️ Yoco: Failed to send email:', data.error)
                 }
             } catch (error) {
                 console.error('❌ Yoco: Email sending error:', error)
@@ -53,13 +50,13 @@ export const PaymentSuccessModal: React.FC = () => {
         sendCustomerEmail()
     }, [token, transactionCode])
 
-    // ✅ PayPal: Send capture + webhook-triggered confirmation email
+    // ✅ PayPal webhook + capture + email
     useEffect(() => {
         const sendPayPalStatus = async () => {
             if (!paypalOrderId || !token) return
 
             console.log('🧪 PayPal ID:', paypalOrderId)
-            console.log('🧪 Token from URL:', token)
+            console.log('🧪 Token:', token)
 
             try {
                 const res = await fetch('/api/paypal/check-status', {
@@ -79,27 +76,25 @@ export const PaymentSuccessModal: React.FC = () => {
                     console.log('✅ PayPal: Emails sent via webhook.')
                     localStorage.removeItem('paypal_id')
                 } else {
-                    console.warn(
-                        '⚠️ PayPal: Payment not marked as completed:',
-                        data
-                    )
+                    console.warn('⚠️ PayPal: Payment not completed:', data)
                 }
             } catch (err) {
-                console.error('❌ PayPal: Error verifying transaction:', err)
+                console.error('❌ PayPal: Verification error:', err)
             }
         }
 
         sendPayPalStatus()
     }, [paypalOrderId, token])
 
+    // ✅ Redirect to /cashier with same token used in email
     useEffect(() => {
         setTimeout(() => {
-            redirectToCashier(accountInfo.token)
+            redirectToCashier(token)
         }, 5000)
-    }, [])
+    }, [token])
 
     if (!isOpen || !token) return <Loader />
-    if (accountInfo.token === '') return <Loader />
+    if (token === '') return <Loader />
 
     return (
         <div className='fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-50'>
@@ -116,7 +111,7 @@ export const PaymentSuccessModal: React.FC = () => {
                 </p>
                 <div className='mt-4 flex justify-center gap-4'>
                     <button
-                        onClick={() => redirectToCashier(accountInfo.token)}
+                        onClick={() => redirectToCashier(token)}
                         className='rounded-md bg-green-500 px-4 py-2 text-white'
                     >
                         Go to Cashier
