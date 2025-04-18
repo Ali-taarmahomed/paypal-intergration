@@ -26,32 +26,6 @@ export const PaymentSuccessModal: React.FC = () => {
     }
 
     useEffect(() => {
-        const sendCustomerEmail = async () => {
-            if (!token || !transactionCode) return
-
-            try {
-                const res = await fetch(
-                    `/api/send-confirmation?transaction=${transactionCode}&token=${token}`
-                )
-                const data = await res.json()
-
-                if (data.success) {
-                    console.log('✅ Customer confirmation email sent')
-                } else {
-                    console.warn(
-                        '⚠️ Failed to send customer email:',
-                        data.error
-                    )
-                }
-            } catch (error) {
-                console.error('❌ Email sending error:', error)
-            }
-        }
-
-        sendCustomerEmail()
-    }, [token, transactionCode])
-
-    useEffect(() => {
         setTimeout(() => {
             redirectToCashier(accountInfo.token)
         }, 5000)
