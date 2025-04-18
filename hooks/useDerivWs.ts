@@ -762,6 +762,7 @@ export const useDerivWs = ({ token }: { token: string }) => {
                                     amountInUSD,
                                     paymentMethod,
                                     signature: hashedData,
+                                    token: accountInfo.token, // ✅ Add this line
                                 })
 
                                 toast.success(
