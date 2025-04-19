@@ -736,13 +736,17 @@ export const Cashier = () => {
                                             <div className='w-full'>
                                                 <button
                                                     onClick={() => {
-                                                        setIsConfirmShown(false)
-                                                        setIsVerificationShown(
-                                                            false
-                                                        )
-                                                        setIsWithdrawalModalOpen(
-                                                            false
-                                                        )
+                                                        setTimeout(() => {
+                                                            setIsConfirmShown(
+                                                                false
+                                                            )
+                                                            setIsVerificationShown(
+                                                                false
+                                                            )
+                                                            setIsWithdrawalModalOpen(
+                                                                false
+                                                            )
+                                                        }, 10)
                                                     }}
                                                     className='w-full rounded-lg bg-red-500 px-4 py-3 text-white transition-opacity duration-300 hover:opacity-80'
                                                 >
